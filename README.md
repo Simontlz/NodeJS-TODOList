@@ -13,3 +13,8 @@
 ```
     npm start
 ```
+
+The following repo comes with an existing database: __expressapi.db__ . 
+There are two users already registered :
+* pseudo: _simon_     password: _simon_
+* pseudo: _jeremy_     password: _jeremy_
