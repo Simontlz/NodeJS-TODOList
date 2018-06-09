@@ -1,0 +1,22 @@
+{
+  "name": "njs-303b",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^2.0.1",
+    "body-parser": "^1.18.3",
+    "cookie-parser": "^1.4.3",
+    "dateformat": "^3.0.3",
+    "express": "^4.16.3",
+    "express-session": "^1.15.6",
+    "hat": "0.0.3",
+    "method-override": "^2.3.10",
+    "node-sass-middleware": "^0.9.8",
+    "path": "^0.12.7",
+    "pug": "^2.0.0-beta6",
+    "sqlite": "^2.9.2"
+  }
+}

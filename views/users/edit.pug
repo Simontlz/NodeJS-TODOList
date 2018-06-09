@@ -1,0 +1,30 @@
+extends ../layout
+
+block content
+  h2.text-center.title-login= title
+  form(action="/users" method="post")
+    .row.justify-content-md-center
+      .col.col-lg-2
+        .form-group
+          label(for='inputPseudo') Pseudo
+          input#inputPseudo.form-control(name="pseudo" type="text" value=user.pseudo placeholder="pseudo")
+      .col.col-lg-2
+        .form-group
+          label(for='inputEmail') Email
+          input#inputEmail.form-control(name="email" type="email" value=user.email placeholder="email")
+      .col.col-lg-2
+        .form-group
+          label(for='inputPassword') Password
+          input#inputPassword.form-control(name="password" type="password" value=user.password placeholder="password")
+    .row.justify-content-md-center
+      .col.col-lg-2
+        .form-group
+          label(for='inputFirstname') Firstname
+          input#inputFirstname.form-control(name="firstname" type="text" value=user.firstname placeholder="firstname")
+      .col.col-lg-2
+        .form-group
+          label(for='inputLastname') Lastname
+          input#inputLastname.form-control(name="lastname" type="text" value=user.lastname placeholder="lastname")
+    .row.justify-content-md-center
+      .col-md-auto
+        button.btn.btn-warning(type='submit') Add

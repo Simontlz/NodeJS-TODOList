@@ -1,0 +1,13 @@
+@import "./settings";
+
+body {
+  background-color: $color-primary!important;
+  font: $font-primary!important;
+  color: $color-secondary!important;
+}
+.body-container {
+  padding: 5%;
+}
+.title-login {
+  margin-bottom: 5%;
+}

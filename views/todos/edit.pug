@@ -1,0 +1,13 @@
+extends ../layout
+
+block content
+    h2.text-center.title-login= title
+    form(action="/todos" method="post")
+        .row.justify-content-md-center
+            .col.col-lg-2
+                .form-group
+                    label(for='inputMessage') Message
+                    input#inputMessage.form-control(name="message" type="text" placeholder="Message")
+        .row.justify-content-md-center
+            .col-md-auto
+                button.btn.btn-warning(type='submit') Add
