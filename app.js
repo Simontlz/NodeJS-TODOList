@@ -9,7 +9,6 @@ const db = require('sqlite')
 const dateFormat = require('dateformat');
 const bodyParser = require('body-parser')
 const methodOverride = require('method-override')
-const hat = require('hat')
 
 
 // Constantes et initialisations
@@ -20,20 +19,16 @@ const app = express()
 db.open('expressapi.db').then(() => {
     db.run('CREATE TABLE IF NOT EXISTS users (pseudo, email, firstname, lastname, password, createdAt, updatedAt)')
         .then(() => {
-            console.log('> Database ready')
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS sessions (userId, accessToken, createdAt, expiresAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS todos (userId, message, createdAt, updatedAt, completedAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
+            db.run('CREATE TABLE IF NOT EXISTS sessions (userId, accessToken, createdAt, expiresAt)')
+        })
+            .then(() => {
+                db.run('CREATE TABLE IF NOT EXISTS todos (userId, message, createdAt, updatedAt, completedAt)')
+            })
+                .then(() => {
+                    console.log('> Database ready')
+                }).catch((err) => {
+                    console.error('ERR> ', err)
+                })
 })
 
 // Middleware de sessions
@@ -78,18 +73,55 @@ app.use(sass({
 app.use(express.static(path.join(__dirname, 'assets')))
 
 function requiresAuthentication (req, res, next) {
-    if (req && req.session && req.session.accessToken) {
-        next()
-    }
-    else if (req.originalUrl == "/users/add"){
-        next()
-    }
-    else if (req.originalUrl == "/users" && req.method == "POST"){
-        next()
-    }
-    else {
-        res.redirect('/sessions')
-    }
+    res.format({
+        html: () => {
+            if (req && req.session && req.session.accessToken) {
+                if (req.session.expiresAt && (req.session.expiresAt > dateFormat(new Date()))) {
+                    next()
+                }
+                else {
+                    res.redirect('/sessions')
+                }
+            }
+            else if (req.originalUrl == "/users/add"){
+                next()
+            }
+            else if (req.originalUrl == "/users" && req.method == "POST"){
+                next()
+            }
+            else {
+                res.redirect('/sessions')
+            }
+        },
+        json: () => {
+                token = req.headers['x-access-token'];
+                if (token) {
+                    if (token == req.session.accessToken) {
+                        if (req.session.expiresAt && (req.session.expiresAt > dateFormat(new Date()))) {
+                            next()
+                        }
+                        else {
+                            return res.status(403).send({
+                                success: false,
+                                message: 'Token expired.'
+                            });
+                        }
+                    }
+                    else {
+                        return res.status(403).send({
+                            success: false,
+                            message: 'Wrong token provided.'
+                        });
+                    }
+                }
+                else {
+                    return res.status(403).send({
+                        success: false,
+                        message: 'No token provided.'
+                    });
+                }
+        }
+    })
 }
 
 // La liste des différents routeurs (dans l'ordre)

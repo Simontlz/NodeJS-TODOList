@@ -1,41 +1,15 @@
 const router = require('express').Router()
 // Dépendances native
-const path = require('path')
 const dateFormat = require('dateformat');
 
 // Dépendances 3rd party
 const express = require('express')
-const sass = require('node-sass-middleware')
-const session = require('express-session')
 const db = require('sqlite')
-const bodyParser = require('body-parser')
 const hat = require('hat')
-const methodOverride = require('method-override')
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
+const bcrypt = require('bcrypt')
 
 // Constantes et initialisations
-const PORT = process.PORT || 8080
 const app = express()
-
-// DATABASE
-db.open('expressapi.db').then(() => {
-    db.run('CREATE TABLE IF NOT EXISTS users (pseudo, email, firstname, lastname, password, createdAt, updatedAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS sessions (userId, accessToken, createdAt, expiresAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS todos (userId, message, createdAt, updatedAt, completedAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-})
 
 //==========================================================================================
 //==========================================================================================
@@ -62,23 +36,60 @@ router.post('/', (req, res, next) => {
     }
     db.get("SELECT pseudo, password FROM users WHERE pseudo = ?", req.body.pseudo)
         .then((user) => {
-            bcrypt.compare(req.body.password, user.password).then((result) => {
-                if (result) {
-                    let accessToken = hat();
-                    let userId = user.pseudo;
-                    let now = new Date();
-                    //INSERT DATA INTO TABLE SESSIONS IF NO RECORDS WITH THE SAME PSEUDO
-                    db.run('INSERT INTO sessions SELECT "'+user.pseudo+'", "'+accessToken+'", "'+dateFormat(now)+'", "'+null+'" WHERE NOT EXISTS(SELECT 1 FROM sessions WHERE userId = "'+user.pseudo+'")')
-                        .then(() => {
-                            req.session.accessToken = accessToken;
-                            req.session.userId = userId;
-                            res.format({
-                                html: () => { res.redirect('/users') },
-                                json: () => { res.send('Access token: '+accessToken) },
-                            })
-                        }).catch(next)
-                }
-            }).catch(next);
+            if (user) {
+                bcrypt.compare(req.body.password, user.password).then((result) => {
+                    if (result) {
+                        let accessToken = hat();
+                        let userId = user.pseudo;
+                        let now = new Date();
+                        Date.prototype.addHours= function(h){
+                            this.setHours(this.getHours()+h);
+                            return this;
+                        };
+                        let expiresAt = dateFormat((new Date()).setHours((new Date()).getHours() + 4));
+                        req.session.accessToken = accessToken;
+                        req.session.expiresAt = expiresAt;
+                        req.session.userId = userId;
+                        //INSERT DATA INTO TABLE SESSIONS IF NO RECORDS WITH THE SAME PSEUDO
+                        db.get('SELECT * FROM sessions WHERE userId = ?', userId).then((result) => {
+                            if (result){
+                                db.run('UPDATE sessions SET expiresAt = ? WHERE userId = ?', expiresAt, userId).then(() => {
+                                    res.format({
+                                        html: () => { res.redirect('/users') },
+                                        json: () => {
+                                            res.send({
+                                                ACCESSTOKEN: accessToken
+                                            })
+                                        },
+                                    })
+                                })
+                            } else {
+                                db.run('INSERT INTO sessions SELECT "'+user.pseudo+'", "'+accessToken+'", "'+dateFormat(now)+'", "'+expiresAt+'" WHERE NOT EXISTS(SELECT 1 FROM sessions WHERE userId = "'+user.pseudo+'")')
+                                    .then(() => {
+                                        res.format({
+                                            html: () => { res.redirect('/users') },
+                                            json: () => {
+                                                res.send({
+                                                    ACCESSTOKEN: accessToken
+                                                })
+                                            },
+                                        })
+                                    }).catch(next)
+                            }
+                        });
+                    }
+                }).catch(next);
+            }
+            else {
+                res.format({
+                    html: () => { res.redirect('/sessions') },
+                    json: () => {
+                        res.send({
+                            message: 'Wrong username/password'
+                        })
+                    },
+                })
+            }
         }).catch(next);
 
 });

@@ -1,41 +1,10 @@
 const router = require('express').Router()
 // Dépendances native
-const path = require('path')
-const App = require('../app');
 const dateFormat = require('dateformat');
 
 // Dépendances 3rd party
-const express = require('express')
-const session = require('express-session')
-const sass = require('node-sass-middleware')
 const db = require('sqlite')
-const bodyParser = require('body-parser')
-const hat = require('hat')
-const methodOverride = require('method-override')
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
 
-// Constantes et initialisations
-const PORT = process.PORT || 8080
-const app = express()
-// DATABASE
-db.open('expressapi.db').then(() => {
-    db.run('CREATE TABLE IF NOT EXISTS users (pseudo, email, firstname, lastname, password, createdAt, updatedAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS sessions (userId, accessToken, createdAt, expiresAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-    db.run('CREATE TABLE IF NOT EXISTS todos (userId, message, createdAt, updatedAt, completedAt)')
-        .then(() => {
-        }).catch((err) => { // Si on a eu des erreurs
-        console.error('ERR> ', err)
-    })
-})
 
 //==========================================================================================
 //==========================================================================================
@@ -90,15 +59,30 @@ router.post('/', (req, res, next) => {
 // UPDATE TODOS
 router.post('/update', (req, res, next) => {
     let now = new Date();
-    id = req.body.id
-    if (id.length < 2) {
-        db.run("UPDATE todos SET completedAt = ? WHERE ROWID = ?", dateFormat(now), id)
+    id = req.body.id;
+    if (typeof(id) != 'undefined') {
+        if (id.length < 2) {
+            db.run("UPDATE todos SET completedAt = ? WHERE ROWID = ?", dateFormat(now), id)
+        }
+        else {
+            id.forEach(function(idToUpdate) {
+                db.run("UPDATE todos SET completedAt = ? WHERE ROWID = ?", dateFormat(now), idToUpdate)
+            })
+        }
     }
     else {
-        id.forEach(function(idToUpdate) {
-            db.run("UPDATE todos SET completedAt = ? WHERE ROWID = ?", dateFormat(now), idToUpdate)
-        })
+        db.run("UPDATE todos SET completedAt = ?", null)
     }
+    res.format({
+        html: () => { res.redirect('/todos') },
+        json: () => { res.status(201).send({message: 'success'}) }
+    })
+});
+
+// DELETE TODOS
+router.get('/delete/:id', (req, res, next) => {
+    todoId = req.params.id;
+    db.run("DELETE FROM todos WHERE ROWID = ?", todoId)
     res.format({
         html: () => { res.redirect('/todos') },
         json: () => { res.status(201).send({message: 'success'}) }
